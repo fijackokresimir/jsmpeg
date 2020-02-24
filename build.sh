@@ -66,6 +66,7 @@ cat \
 	src/fetch.js \
 	src/ajax-progressive.js \
 	src/websocket.js \
+	src/webrtc.js \
 	src/ts.js \
 	src/decoder.js \
 	src/mpeg1.js \
@@ -84,9 +85,11 @@ echo "JSMpeg.WASM_BINARY_INLINED='$(base64 -w 0 jsmpeg.wasm)';" \
 
 
 # Minify
-uglifyjs jsmpeg.js -o jsmpeg.min.js
+# uglifyjs jsmpeg.js -o jsmpeg.min.js
+cp jsmpeg.js dist/jsmpeg.min.js
 
 # Cleanup
 rm jsmpeg.js
 rm jsmpeg.wasm
 
+echo "BUILD.SH FINISHED"
