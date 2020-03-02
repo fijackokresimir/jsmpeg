@@ -21,6 +21,7 @@ var WebRTCSource = function (url, options) {
 
     this.reconnectTimeoutId = 0;
 
+    this.onReadyToNegotiateConnection = options.onReadyToNegotiateConnection;
     this.onEstablishedCallback = options.onSourceEstablished;
     this.onCompletedCallback = options.onSourceCompleted; // Never used
 };
@@ -53,54 +54,7 @@ WebRTCSource.prototype.start = function() {
     this.rtcDataChannel.onclose = this.onClose.bind(this);
     this.rtcDataChannel.onerror = this.onClose.bind(this);
 
-    this.negotiate();
-};
-
-WebRTCSource.prototype.negotiate = function() {
-    var that = this;
-
-    return this.rtcPeerConnection.createOffer()
-        .then(function(offer) {
-            return that.rtcPeerConnection.setLocalDescription(offer)
-        })
-        .then(function() {
-            // wait for ICE gathering to complete
-            return new Promise(function(resolve) {
-                if (that.rtcPeerConnection.iceGatheringState === 'complete') {
-                    resolve();
-                } else {
-                    that.rtcPeerConnection.addEventListener("icegatheringstatechange", function onIcegatheringstatechange() {
-                        if (that.rtcPeerConnection.iceGatheringState === 'complete') {
-                            that.rtcPeerConnection.removeEventListener("icegatheringstatechange", onIcegatheringstatechange);
-                            resolve();
-                        }
-                    })
-                }
-            });
-        })
-        .then(function() {
-            return fetch(that.url, {
-                body: JSON.stringify({
-                    sdp: that.rtcPeerConnection.localDescription.sdp,
-                    type: that.rtcPeerConnection.localDescription.type,
-                    stream_type: "high",
-                    stream_source: 'local'
-                }),
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                method: 'POST',
-            });
-        })
-        .then(function(response) {
-            return response.json();
-        })
-        .then(function(answer) {
-            return that.rtcPeerConnection.setRemoteDescription(answer);
-        })
-        .catch(function(e) {
-            console.error(e);
-        });
+    this.onReadyToNegotiateConnection(this);
 };
 
 WebRTCSource.prototype.write = function(buffer) {
