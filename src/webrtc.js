@@ -35,6 +35,7 @@ WebRTCSource.prototype.destroy = function () {
     this.shouldAttemptReconnect = false;
     this.rtcDataChannel.close();
     this.rtcPeerConnection.close();
+    this.rtcPeerConnection = null;
 };
 
 WebRTCSource.prototype.start = function() {
