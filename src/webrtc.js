@@ -42,10 +42,7 @@ WebRTCSource.prototype.start = function() {
     this.progress = 0;
     this.established = false;
 
-    // TODO INVESTIGATE WHY CHROME DOESN'T WORK WITHOUT ICE SERVER (WHICH WE DON'T USE)
-    this.rtcPeerConnection = new RTCPeerConnection({
-        iceServers: [{'urls': 'stun:stun.l.google.com:19302'},]
-    });
+    this.rtcPeerConnection = new RTCPeerConnection(this.options.rtcConfiguration);
     this.rtcDataChannel = this.rtcPeerConnection.createDataChannel("dataChannel");
     // CHROME SAYS IT DOESN'T SUPPORT BLOB SO WE CAN'T HAVE THIS COMMAND BUT PROGRAM STILL WORKS
     // this.rtcDataChannel.binaryType = 'blob';
