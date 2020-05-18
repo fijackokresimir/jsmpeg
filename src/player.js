@@ -90,6 +90,84 @@ var Player = function(url, options) {
 	}
 };
 
+Player.prototype.changeWssToWebRTC = function(options, rtcPeerConnection, rtcDataChannel) {
+	console.log(rtcPeerConnection);
+	this.source.destroy();
+	this.source = new JSMpeg.Source.WebRTC(options, rtcPeerConnection, rtcDataChannel);
+
+
+	this.maxAudioLag = options.maxAudioLag || 0.25;
+	this.loop = options.loop !== false;
+	this.autoplay = !!options.autoplay || options.streaming;
+
+	this.demuxer = new JSMpeg.Demuxer.TS(options);
+	this.source.connect(this.demuxer);
+
+	if (!options.disableWebAssembly && JSMpeg.WASMModule.IsSupported()) {
+		this.wasmModule = JSMpeg.WASMModule.GetModule();
+		options.wasmModule = this.wasmModule;
+	}
+
+	if (options.video !== false) {
+		this.video = options.wasmModule
+			? new JSMpeg.Decoder.MPEG1VideoWASM(options)
+			: new JSMpeg.Decoder.MPEG1Video(options);
+
+		this.renderer = !options.disableGl && JSMpeg.Renderer.WebGL.IsSupported()
+			? new JSMpeg.Renderer.WebGL(options)
+			: new JSMpeg.Renderer.Canvas2D(options);
+
+		this.demuxer.connect(JSMpeg.Demuxer.TS.STREAM.VIDEO_1, this.video);
+		this.video.connect(this.renderer);
+	}
+
+	if (options.audio !== false && JSMpeg.AudioOutput.WebAudio.IsSupported()) {
+		this.audio = options.wasmModule
+			? new JSMpeg.Decoder.MP2AudioWASM(options)
+			: new JSMpeg.Decoder.MP2Audio(options);
+		this.audioOut = new JSMpeg.AudioOutput.WebAudio(options);
+		this.demuxer.connect(JSMpeg.Demuxer.TS.STREAM.AUDIO_1, this.audio);
+		this.audio.connect(this.audioOut);
+	}
+
+	Object.defineProperty(this, 'currentTime', {
+		get: this.getCurrentTime,
+		set: this.setCurrentTime
+	});
+	Object.defineProperty(this, 'volume', {
+		get: this.getVolume,
+		set: this.setVolume
+	});
+
+	this.paused = true;
+	this.unpauseOnShow = false;
+	if (options.pauseWhenHidden !== false) {
+		document.addEventListener('visibilitychange', this.showHide.bind(this));
+	}
+
+	// If we have WebAssembly support, wait until the module is compiled before
+	// loading the source. Otherwise the decoders won't know what to do with
+	// the source data.
+	if (this.wasmModule) {
+		if (this.wasmModule.ready) {
+			this.startLoading();
+		}
+		else if (JSMpeg.WASM_BINARY_INLINED) {
+			var wasm = JSMpeg.Base64ToArrayBuffer(JSMpeg.WASM_BINARY_INLINED);
+			this.wasmModule.loadFromBuffer(wasm, this.startLoading.bind(this));
+		}
+		else {
+			this.wasmModule.loadFromFile('jsmpeg.wasm',  this.startLoading.bind(this));
+		}
+	}
+	else {
+		this.startLoading();
+
+	}
+
+
+};
+
 Player.prototype.startLoading = function() {
 	this.source.start();
 	if (this.autoplay) {

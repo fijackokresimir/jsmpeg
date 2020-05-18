@@ -1,10 +1,9 @@
 JSMpeg.Source.WebRTC = (function() { "use strict";
 
-var WebRTCSource = function (url, options) {
-    this.url = url;
+var WebRTCSource = function (options, rtcPeerConnection, rtcDataChannel) {
     this.options = options;
-    this.rtcPeerConnection = null;
-    this.rtcDataChannel = null;
+    this.rtcPeerConnection = rtcPeerConnection;
+    this.rtcDataChannel = rtcDataChannel;
     this.streaming = true;
 
     this.callbacks = {connect: [], data: []};
@@ -16,12 +15,11 @@ var WebRTCSource = function (url, options) {
     this.shouldAttemptReconnect = !!this.reconnectInterval;
 
     this.completed = false;
-    this.established = false;
+    this.established = true;
     this.progress = 0;
 
     this.reconnectTimeoutId = 0;
 
-    this.onReadyToNegotiateConnection = options.onReadyToNegotiateConnection;
     this.onEstablishedCallback = options.onSourceEstablished;
     this.onCompletedCallback = options.onSourceCompleted; // Never used
 };
@@ -43,16 +41,12 @@ WebRTCSource.prototype.start = function() {
     this.progress = 0;
     this.established = false;
 
-    this.rtcPeerConnection = new RTCPeerConnection(this.options.rtcConfiguration);
-    this.rtcDataChannel = this.rtcPeerConnection.createDataChannel("dataChannel");
     // CHROME SAYS IT DOESN'T SUPPORT BLOB SO WE CAN'T HAVE THIS COMMAND BUT PROGRAM STILL WORKS
     // this.rtcDataChannel.binaryType = 'blob';
     this.rtcDataChannel.onopen = this.onOpen.bind(this);
     this.rtcDataChannel.onmessage = this.onMessage.bind(this);
     this.rtcDataChannel.onclose = this.onClose.bind(this);
     this.rtcDataChannel.onerror = this.onClose.bind(this);
-
-    this.onReadyToNegotiateConnection(this);
 };
 
 WebRTCSource.prototype.write = function(buffer) {
