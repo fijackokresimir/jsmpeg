@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>JSMPEG webRTC support</title>
+</head>
+<body>
+
+<canvas id="video-canvas"></canvas>
+
+<script src="https://webrtc.github.io/adapter/adapter-latest.js"></script>
+<script src="jsmpeg.js"></script>
+
+<script>
+    var canvas = document.getElementById('video-canvas');
+    var offerUrl = 'http://localhost:5101/cameras/5e9ee609b186570006dde3da/offer';
+
+    const rtcConfiguration = {
+        iceServers: [
+            /* at the moment webrtc is used only locally so there is need for stun/turn servers, but
+            * PLEASE DO NOT REMOVE STUN GOOGLE SERVER BECAUSE CHROME WILL NOT WORK
+            * That is because chrome doesn't want potential attackers to misuse webrtc to scan local network,
+            * and if stun server is not used, it will use mDNS and that will fail.
+            * */
+            {'urls': 'stun:stun.l.google.com:19302'}
+        ]
+    };
+
+    const rtcPeerConnection = new RTCPeerConnection(rtcConfiguration);
+    const rtcDataChannel = rtcPeerConnection.createDataChannel('dataChannel');
+    /*
+     Note: this event connection state is different for FF and Chrome. It is mandatory to use
+     'adapter.js'. Here it is included inside index.html (above).
+    */
+    rtcPeerConnection.onconnectionstatechange = (ev) => {
+        if (rtcPeerConnection.connectionState === 'connected') {
+            this.player = new JSMpeg.Player(
+                '', // no need to pass url here. we keep this so that other jsmpeg sources are not affected
+                {
+                    source: JSMpeg.Source.WebRTC,
+                    canvas: canvas,
+                    rtcPeerConnection: rtcPeerConnection,
+                    rtcDataChannel: rtcDataChannel
+                }
+            );
+        }
+
+        if (rtcPeerConnection.connectionState === 'failed') {
+            rtcDataChannel.close();
+            rtcPeerConnection.close();
+        }
+    };
+
+    rtcPeerConnection
+        .createOffer()
+        .then((offer) => rtcPeerConnection.setLocalDescription(offer))
+        .then(function () {
+            // wait for ICE gathering to complete
+            return new Promise(function (resolve) {
+                rtcPeerConnection.addEventListener('icegatheringstatechange', function onIcegatheringstatechange() {
+                    if (rtcPeerConnection.iceGatheringState === 'complete') {
+                        rtcPeerConnection.removeEventListener('icegatheringstatechange', onIcegatheringstatechange);
+                        resolve();
+                    }
+                });
+            });
+        })
+        .then(function () {
+            return fetch(offerUrl, {
+                body: JSON.stringify({
+                    sdp: rtcPeerConnection.localDescription.sdp,
+                    type: rtcPeerConnection.localDescription.type,
+                    stream_type: "high",
+                    stream_source: 'local'
+                }),
+                headers: {
+                    // this doesnt work with mode: no-cors
+                    'Content-Type': 'application/json'
+                },
+                method: 'POST',
+                mode: "no-cors"
+            });
+        })
+        .then((answer) => rtcPeerConnection.setRemoteDescription(answer))
+        .catch(function (e) {
+            console.error('error', e);
+            rtcDataChannel.close();
+            rtcPeerConnection.close();
+        });
+</script>
+</body>
+</html>

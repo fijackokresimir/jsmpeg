@@ -1,3 +1,32 @@
+# JSMPEG custom build for vision
+
+This is modified jsmpeg library for vision.
+It's main purpose is to allow webrtc as source of data.
+As vision app is complex and has special requirements due to security involved, webrtc is not implemented to negotiate offers inside jsmpeg, but rather outside.
+
+Minimum working example can be tried with following:
+`npm install`
+`npm run server`
+
+This will install npm dependencies and start server - this is not originally part of jsmpeg, and is made to simplify development process.
+These source files are located inside directory 'src-vision' and it's best to modify index.html that contains script element with js commands.
+To actually get video stream, it's best to allow offer negotiation without authorization (consult backend team for that).
+
+For custom build, it's best to consult jsmpeg docs, but in short:
+Install emscripten
+
+Use emscripten env variables, example:
+ `source ./../emsdk/emsdk_env.sh`
+Make custom build: 
+`./build.sh`
+
+This will also modify jsmpeg.js inside '/dist' folder.
+
+If you want to copy jsmpeg.js and try it in vision, i would just copy/paste file (if angular is running, it will automatically refresh):
+`cp ./dist/jsmpeg.js ~/Source/NSOFT/vision-interface/src/scripts/jsmpeg.min.js`
+
+Note: ATM this doesn't minify jsmpeg.js file. That is on purpose since it's easier to make small modification inside vision app for faster troubleshooting.
+
 # JSMpeg – MPEG1 Video & MP2 Audio Decoder in JavaScript
 
 JSMpeg is a Video Player written in JavaScript. It consists of an MPEG-TS demuxer, MPEG1 video & MP2 audio decoders, WebGL & Canvas2D renderers and WebAudio sound output. JSMpeg can load static videos via Ajax and allows low latency streaming (~50ms) via WebSockets.

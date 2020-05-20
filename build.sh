@@ -83,13 +83,16 @@ cat \
 echo "JSMpeg.WASM_BINARY_INLINED='$(base64 -w 0 jsmpeg.wasm)';" \
 	>> jsmpeg.js
 
+# DEVELOPMENT PURPOSES
+cp jsmpeg.js dist/jsmpeg.js
 
-# Minify
+# PRODUCTION PURPOSES - atm leave unminfied for easier troubleshooting inside vision project
+cp jsmpeg.js jsmpeg.min.js
+# if using minifed, include this:
 # uglifyjs jsmpeg.js -o jsmpeg.min.js
-cp jsmpeg.js dist/jsmpeg.min.js
 
 # Cleanup
-rm jsmpeg.js
 rm jsmpeg.wasm
+rm jsmpeg.js
 
 echo "BUILD.SH FINISHED"
