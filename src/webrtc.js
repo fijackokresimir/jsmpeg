@@ -1,9 +1,9 @@
 JSMpeg.Source.WebRTC = (function() { "use strict";
 
-var WebRTCSource = function (options, rtcPeerConnection, rtcDataChannel) {
+var WebRTCSource = function (options) {
     this.options = options;
-    this.rtcPeerConnection = rtcPeerConnection;
-    this.rtcDataChannel = rtcDataChannel;
+    this.rtcPeerConnection = options.rtcPeerConnection;
+    this.rtcDataChannel = options.rtcDataChannel;
     this.streaming = true;
 
     this.callbacks = {connect: [], data: []};
