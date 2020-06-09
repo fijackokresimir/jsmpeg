@@ -1,6 +1,5 @@
 #!/bin/sh
 
-
 # Build the .wasm Module first
 
 # Since we're compiling a side module here, so that we can load it without the

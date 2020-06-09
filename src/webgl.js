@@ -76,7 +76,9 @@ WebGLRenderer.prototype.destroy = function() {
 	gl.bindBuffer(gl.ARRAY_BUFFER, null);
 	gl.deleteBuffer(this.vertexBuffer);
 
-	gl.getExtension('WEBGL_lose_context').loseContext();
+	var targetEvent = gl.getExtension('WEBGL_lose_context');
+	if (targetEvent)
+		targetEvent.loseContext();
 	this.canvas.remove();
 };
 
